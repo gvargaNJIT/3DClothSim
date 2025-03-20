@@ -12,12 +12,11 @@ void ParticleGrid::createGrid() {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             Particle p;
-            p.x = x * spacing;
-            p.y = y * spacing;
-            p.vx = 0.0f;
-            p.vy = 0.0f;
+            p.position = glm::vec3(x * spacing, y * spacing, 0.0f);
+            p.previousPosition = p.position;
+            p.force = glm::vec3(0.0f, 0.0f, 0.0f);
             p.mass = 1.0f;
-            
+
             particles.push_back(p);
         }
     }

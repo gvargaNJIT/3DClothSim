@@ -14,4 +14,5 @@ class Cloth {
     void springforces();
     void updateparticles();
     void applygravity();
+    void applymouseconstraint();
 }

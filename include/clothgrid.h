@@ -6,8 +6,9 @@
 #include <glm/glm.hpp>
 
 struct Particle {
-    float x, y;
-    float vx, vy;
+    glm::vec3 position;
+    glm::vec3 previousPosition;
+    glm::vec3 force;
     float mass;
 };
 
