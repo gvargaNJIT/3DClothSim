@@ -18,7 +18,7 @@ set(GLFW_LIBRARY /usr/lib/x86_64-linux-gnu/libglfw.so.3)
 set(GLFW_INCLUDE_DIR /usr/include) 
 
 # Add main executable
-add_executable(cloth_simulation main.cpp)
+add_executable(cloth_simulation src/main.cpp)
 
 # Link libraries
 target_link_libraries(cloth_simulation PRIVATE
