@@ -6,7 +6,8 @@
 
 class ClothTest : public ::testing::Test {
 protected:
-    Cloth cloth{100.0f, 0.1f};
+    Cloth cloth; 
+    ClothTest() : cloth(10, 10, 1.0f, 100.0f, 0.1f) {};
     std::vector<Particle> particles;
     std::vector<Spring> springs;
 
@@ -58,20 +59,3 @@ TEST_F(ClothTest, ApplyGravityTest) {
 
     EXPECT_NE(particles[0].force, initialForce);
 }
-
-
-
-
-/*TEST_F(ClothTest, ApplyMouseConstraintTest) {
-    // Simulate mouse being pressed at position (0.0f, 0.0f)
-    glm::vec2 mousePos(0.0f, 0.0f);
-    bool mousePressed = true;
-
-    // Apply mouse constraint to first particle
-    cloth.applymouseconstraint(mousePos, mousePressed);
-
-    // Check that particle 0's position is updated to mouse position
-    EXPECT_EQ(particles[0].position, glm::vec3(mousePos.x, mousePos.y, 0.0f));
-    EXPECT_EQ(particles[0].previousPosition, glm::vec3(mousePos.x, mousePos.y, 0.0f));
-}
-*/

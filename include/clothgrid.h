@@ -6,9 +6,9 @@
 #include <glm/glm.hpp>
 
 struct Particle {
+    glm::vec3 force;
     glm::vec3 position;
     glm::vec3 previousPosition;
-    glm::vec3 force;
     float mass;
     Particle(const glm::vec3& pos, const glm::vec3& prevPos, float m);
     Particle() 
@@ -24,17 +24,17 @@ struct Spring {
 
 class ParticleGrid {
     private:
-        int width, height;
         std::vector<Particle> particles;
         std::vector<Spring> springs;
-        float spacing = 0.1f;
-        float stiffness = 0.5f;
     
     public:
+        int width, height;
         ParticleGrid(int w, int h, float space);
         void createGrid();
         void addsprings();
         void printGrid();
+        float spacing = 0.1f;
+        float stiffness = 0.5f;
 };
 
 #endif

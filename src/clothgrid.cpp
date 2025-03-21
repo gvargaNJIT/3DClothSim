@@ -3,24 +3,25 @@
 Particle::Particle(const glm::vec3& pos, const glm::vec3& prevPos, float m)
         : position(pos), previousPosition(prevPos), mass(m), force(glm::vec3(0.0f, 0.0f, 0.0f)) {}
 
+ParticleGrid::ParticleGrid(int w, int h, float space)
+        : width(w), height(h), spacing(space), stiffness(0.5f) {}
 
 void ParticleGrid::createGrid() {
     particles.clear();
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            // Initialize particles with position, previous position, and mass
             glm::vec3 pos(x * spacing, y * spacing, 0.0f);
-            glm::vec3 prevPos = pos; // Assume initial velocity is zero
+            glm::vec3 prevPos = pos;
 
-            // Pass mass directly into the Particle constructor
-            Particle p(pos, prevPos, 1.0f); // Mass is set to 1.0f
+            Particle p(pos, prevPos, 1.0f);
             particles.push_back(p);
         }
     }
 }
 
 void ParticleGrid::addsprings() {
+    springs.clear();
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -49,3 +50,9 @@ void ParticleGrid::addsprings() {
 
 Spring::Spring(int a, int b, float rest, float k) 
         : p1(a), p2(b), restLength(rest), stiffness(k) {}
+
+void ParticleGrid::printGrid() {
+    std::cout << "Grid dimensions: " << width << "x" << height << std::endl;
+    std::cout << "Number of particles: " << particles.size() << std::endl;
+    std::cout << "Number of springs: " << springs.size() << std::endl;
+}
