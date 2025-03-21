@@ -8,11 +8,18 @@
 
 class Cloth {
     private:
-    inline const glm::vec3 gravity = glm::vec3(0.0f, -9.81f, 0.0f);
+    static const glm::vec3 gravity;
+    std::vector<Particle> particles;
+    std::vector<Spring> springs;
 
     public:
-    void springforces();
-    void updateparticles();
-    void applygravity();
-    void applymouseconstraint();
-}
+    void springforces(std::vector<Particle>& particles, const std::vector<Spring>& springs, float stiffness, float damping);
+    void updateparticles(std::vector<Particle>& particles, float deltaTime);
+    void applygravity(std::vector<Particle>& particles, float deltaTime);
+    void applymouseconstraint(glm::vec2 mousePos, bool mousePressed);
+    Cloth(float stiff, float damp);
+    float stiffness;
+    float damping;  
+};
+
+#endif

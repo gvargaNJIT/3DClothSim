@@ -1,30 +1,22 @@
 #include "clothgrid.h"
 
-ParticleGrid::ParticleGrid(int w, int h, float space) 
-    : width(w), height(h), spacing(space) {
-    createGrid();
-    addsprings();
-}
+Particle::Particle(const glm::vec3& pos, const glm::vec3& prevPos, float m)
+        : position(pos), previousPosition(prevPos), mass(m), force(glm::vec3(0.0f, 0.0f, 0.0f)) {}
+
 
 void ParticleGrid::createGrid() {
     particles.clear();
 
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
-            Particle p;
-            p.position = glm::vec3(x * spacing, y * spacing, 0.0f);
-            p.previousPosition = p.position;
-            p.force = glm::vec3(0.0f, 0.0f, 0.0f);
-            p.mass = 1.0f;
+            // Initialize particles with position, previous position, and mass
+            glm::vec3 pos(x * spacing, y * spacing, 0.0f);
+            glm::vec3 prevPos = pos; // Assume initial velocity is zero
 
+            // Pass mass directly into the Particle constructor
+            Particle p(pos, prevPos, 1.0f); // Mass is set to 1.0f
             particles.push_back(p);
         }
-    }
-}
-
-void ParticleGrid::printGrid() {
-    for (const auto& p : particles) {
-        std::cout << "Particle at (" << p.x << ", " << p.y << ")" << std::endl;
     }
 }
 

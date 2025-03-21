@@ -10,6 +10,9 @@ struct Particle {
     glm::vec3 previousPosition;
     glm::vec3 force;
     float mass;
+    Particle(const glm::vec3& pos, const glm::vec3& prevPos, float m);
+    Particle() 
+        : position(glm::vec3(0.0f)), previousPosition(glm::vec3(0.0f)), mass(1.0f), force(glm::vec3(0.0f)) {};
 };
 
 struct Spring {
@@ -22,7 +25,6 @@ struct Spring {
 class ParticleGrid {
     private:
         int width, height;
-        float spacing;
         std::vector<Particle> particles;
         std::vector<Spring> springs;
         float spacing = 0.1f;

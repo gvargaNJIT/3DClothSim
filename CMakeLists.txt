@@ -7,7 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Use Conan 2.x toolchain if available (should be called automatically by Conan)
-include(conan_toolchain.cmake)
+include(./build/build/conan_toolchain.cmake)
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake OPTIONAL)
 
 # Find libraries
@@ -47,3 +47,17 @@ if(MSVC)
 else()
     target_compile_options(cloth_simulation PRIVATE -Wall -Wextra)
 endif()
+
+# Enable testing framework
+enable_testing()
+
+# Add Google Test executable
+add_executable(tests test/test_cloth.cpp src/clothsim.cpp src/clothgrid.cpp)
+target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR}/include)
+
+# Link Google Test
+find_package(GTest REQUIRED)
+target_link_libraries(tests PRIVATE GTest::gtest_main)
+
+# Register the test suite
+add_test(NAME ClothSimulationTests COMMAND tests)
