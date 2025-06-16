@@ -4,6 +4,8 @@
 #include <iostream>
 #include "clothsim.h"
 
+bool gravityEnabled = false;
+
 class ClothTest : public ::testing::Test {
 protected:
     Cloth cloth; 

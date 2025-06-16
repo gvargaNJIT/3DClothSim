@@ -11,6 +11,7 @@ GLFWwindow* window;
 int windowWidth = 800;
 int windowHeight = 600;
 bool mousePressed = false;
+bool gravityEnabled = false;
 glm::vec2 mousePos(0.0f, 0.0f);
 
 const int clothWidth = 20;
@@ -104,6 +105,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT) {
         if (action == GLFW_PRESS) {
+            gravityEnabled = true;
             mousePressed = true;
         } else if (action == GLFW_RELEASE) {
             mousePressed = false;

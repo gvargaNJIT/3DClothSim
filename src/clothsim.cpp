@@ -2,6 +2,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 const glm::vec3 Cloth::gravity = glm::vec3(0.0f, -1.0f, 0.0f);
+extern bool gravityEnabled;
 
 Cloth::Cloth(int width, int height, float spacing, float stiff, float damp)
     : width(width), height(height), spacing(spacing), stiffness(stiff), damping(damp) {
@@ -105,10 +106,8 @@ void Cloth::applygravity(std::vector<Particle>& particles, float deltaTime) {
 }
 
 void Cloth::update(float deltaTime) {
-    for (Particle& p : particles) {
-        if (p.mass > 0.0f) {
-            p.force += gravity * p.mass;
-        }
+    if (gravityEnabled) {
+        applygravity(particles, deltaTime);
     }
 
     springforces(particles, springs, stiffness, damping);

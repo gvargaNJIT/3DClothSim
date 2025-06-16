@@ -13,7 +13,6 @@ private:
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
     
-    // Shader sources
     const char* vertexShaderSource = R"(
         #version 330 core
         layout(location = 0) in vec3 aPos;

@@ -17,9 +17,8 @@ public:
     void updateparticles(std::vector<Particle>& particles, float deltaTime);
     void applygravity(std::vector<Particle>& particles, float deltaTime);
     void applymouseconstraint(glm::vec2 mousePos, bool mousePressed);
-    void update(float deltaTime);  // New comprehensive update method
+    void update(float deltaTime);
     
-    // Getter methods for OpenGL renderer
     const std::vector<Particle>& getParticles() const;
     const std::vector<Spring>& getSprings() const;
     
