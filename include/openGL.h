@@ -1,17 +1,17 @@
 #ifndef OPENGL_H
 #define OPENGL_H
 
-#include <GL/glew.h>
-#include <GLFW/glfw3.h>
+#include <QOpenGLFunctions_3_3_Core>
 #include "clothsim.h"
 #include <vector>
 
-class ClothRenderer {
+class ClothRenderer{
 private:
     GLuint vao, vbo, ebo;
     GLuint shaderProgram;
     std::vector<float> vertices;
     std::vector<unsigned int> indices;
+    QOpenGLFunctions_3_3_Core* gl; 
     
     const char* vertexShaderSource = R"(
         #version 330 core
@@ -68,7 +68,7 @@ public:
     ClothRenderer();
     ~ClothRenderer();
     
-    void initialize();
+    void initialize(QOpenGLFunctions_3_3_Core* funcs);
     void render(const Cloth& cloth, const std::vector<Particle>& particles, const glm::mat4& projection, const glm::mat4& view);
 };
 

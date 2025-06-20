@@ -1,4 +1,5 @@
 #include "openGL.h"
+#include <QOpenGLFunctions> 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
@@ -8,22 +9,22 @@ ClothRenderer::ClothRenderer()
 }
 
 ClothRenderer::~ClothRenderer() {
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-    glDeleteProgram(shaderProgram);
+    gl->glDeleteVertexArrays(1, &vao);
+    gl->glDeleteBuffers(1, &vbo);
+    gl->glDeleteBuffers(1, &ebo);
+    gl->glDeleteProgram(shaderProgram);
 }
 
 GLuint ClothRenderer::compileShader(GLenum type, const char* source) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &source, NULL);
-    glCompileShader(shader);
+    GLuint shader = gl->glCreateShader(type);
+    gl->glShaderSource(shader, 1, &source, NULL);
+    gl->glCompileShader(shader);
 
     GLint success;
     GLchar infoLog[512];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    gl->glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success) {
-        glGetShaderInfoLog(shader, 512, NULL, infoLog);
+        gl->glGetShaderInfoLog(shader, 512, NULL, infoLog);
         std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
         return 0;
     }
@@ -32,32 +33,81 @@ GLuint ClothRenderer::compileShader(GLenum type, const char* source) {
 }
 
 void ClothRenderer::setupShaders() {
+    const char* vertexShaderSource = R"(
+        #version 330 core
+        layout(location = 0) in vec3 position;
+        layout(location = 1) in vec3 normal;
+
+        uniform mat4 model;
+        uniform mat4 view;
+        uniform mat4 projection;
+
+        uniform bool isBackFace;
+        uniform float thickness;
+
+        out vec3 FragPos;
+        out vec3 Normal;
+
+        void main() {
+            vec3 displacedPos = position;
+            if (isBackFace) {
+                displacedPos -= normal * thickness;
+            }
+
+            FragPos = vec3(model * vec4(displacedPos, 1.0));
+            Normal = mat3(transpose(inverse(model))) * normal;
+            gl_Position = projection * view * model * vec4(displacedPos, 1.0);
+        }
+    )";
+
+    const char* fragmentShaderSource = R"(
+        #version 330 core
+        in vec3 FragPos;
+        in vec3 Normal;
+
+        uniform vec3 lightPos;
+        uniform vec3 lightColor;
+        uniform vec3 clothColor;
+
+        out vec4 FragColor;
+
+        void main() {
+            vec3 norm = normalize(Normal);
+            vec3 lightDir = normalize(lightPos - FragPos);
+            float diff = max(dot(norm, lightDir), 0.0);
+
+            vec3 diffuse = diff * lightColor;
+            vec3 result = (diffuse + vec3(0.1)) * clothColor;
+            FragColor = vec4(result, 1.0);
+        }
+    )";
+
     GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexShaderSource);
     GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentShaderSource);
 
-    shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, fragmentShader);
-    glLinkProgram(shaderProgram);
+    shaderProgram = gl->glCreateProgram();
+    gl->glAttachShader(shaderProgram, vertexShader);
+    gl->glAttachShader(shaderProgram, fragmentShader);
+    gl->glLinkProgram(shaderProgram);
 
     GLint success;
     GLchar infoLog[512];
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    gl->glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
+        gl->glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cerr << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
     }
 
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    gl->glDeleteShader(vertexShader);
+    gl->glDeleteShader(fragmentShader);
 }
 
-void ClothRenderer::initialize() {
+void ClothRenderer::initialize(QOpenGLFunctions_3_3_Core* funcs) {
+    gl = funcs;
     setupShaders();
-
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &ebo);
+    gl->glGenVertexArrays(1, &vao);
+    gl->glGenBuffers(1, &vbo);
+    gl->glGenBuffers(1, &ebo);
 }
 
 void ClothRenderer::calculateNormals(std::vector<float>& vertices, const std::vector<Particle>& particles, int width, int height) {
@@ -131,74 +181,116 @@ void ClothRenderer::calculateNormals(std::vector<float>& vertices, const std::ve
 void ClothRenderer::updateBuffers(const std::vector<Particle>& particles, int width, int height) {
     vertices.clear();
     vertices.resize(particles.size() * 6, 0.0f);
-    
+
     for (size_t i = 0; i < particles.size(); i++) {
         vertices[i * 6 + 0] = particles[i].position.x;
         vertices[i * 6 + 1] = particles[i].position.y;
         vertices[i * 6 + 2] = particles[i].position.z;
-        vertices[i * 6 + 3] = 0.0f;
-        vertices[i * 6 + 4] = 0.0f;
-        vertices[i * 6 + 5] = 1.0f;
     }
-    
+
     calculateNormals(vertices, particles, width, height);
-    
+
+    float thickness = 0.02f;
+    std::vector<float> verticesBack = vertices;
+    for (size_t i = 0; i < particles.size(); ++i) {
+        glm::vec3 normal(
+            verticesBack[i * 6 + 3],
+            verticesBack[i * 6 + 4],
+            verticesBack[i * 6 + 5]
+        );
+        glm::vec3 offsetPos(
+            verticesBack[i * 6 + 0],
+            verticesBack[i * 6 + 1],
+            verticesBack[i * 6 + 2]
+        );
+        offsetPos -= thickness * normal;
+
+        verticesBack[i * 6 + 0] = offsetPos.x;
+        verticesBack[i * 6 + 1] = offsetPos.y;
+        verticesBack[i * 6 + 2] = offsetPos.z;
+
+        verticesBack[i * 6 + 3] = -normal.x;
+        verticesBack[i * 6 + 4] = -normal.y;
+        verticesBack[i * 6 + 5] = -normal.z;
+    }
+
+    vertices.insert(vertices.end(), verticesBack.begin(), verticesBack.end());
+
     indices.clear();
     for (int y = 0; y < height - 1; y++) {
         for (int x = 0; x < width - 1; x++) {
-            int topLeft = y * width + x;
-            int topRight = topLeft + 1;
-            int bottomLeft = (y + 1) * width + x;
-            int bottomRight = bottomLeft + 1;
+            int i0 = y * width + x;
+            int i1 = i0 + 1;
+            int i2 = i0 + width;
+            int i3 = i2 + 1;
 
-            indices.push_back(topLeft);
-            indices.push_back(bottomLeft);
-            indices.push_back(bottomRight);
+            indices.push_back(i0);
+            indices.push_back(i2);
+            indices.push_back(i3);
+            indices.push_back(i0);
+            indices.push_back(i3);
+            indices.push_back(i1);
 
-            indices.push_back(topLeft);
-            indices.push_back(bottomRight);
-            indices.push_back(topRight);
+            // Back face (CW order, offset by particles.size())
+            int offset = particles.size();
+            indices.push_back(i1 + offset);
+            indices.push_back(i3 + offset);
+            indices.push_back(i0 + offset);
+            indices.push_back(i3 + offset);
+            indices.push_back(i2 + offset);
+            indices.push_back(i0 + offset);
         }
     }
 
-    glBindVertexArray(vao);
-    
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);
-    
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+    gl->glBindVertexArray(vao);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    gl->glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    gl->glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_DYNAMIC_DRAW);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    
-    glBindVertexArray(0);
+    gl->glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    gl->glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_DYNAMIC_DRAW);
+
+    gl->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    gl->glEnableVertexAttribArray(0);
+
+    gl->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    gl->glEnableVertexAttribArray(1);
+
+    gl->glBindVertexArray(0);
 }
 
 void ClothRenderer::render(const Cloth& cloth, const std::vector<Particle>& particles, const glm::mat4& projection, const glm::mat4& view) {
     updateBuffers(particles, cloth.width, cloth.height);
 
-    glUseProgram(shaderProgram);
+    gl->glUseProgram(shaderProgram);
 
     glm::mat4 model = glm::mat4(1.0f);
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-    glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    glm::mat4 zBias = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -0.001f));
+    glm::mat4 biasedProjection = projection * zBias;
+
+    gl->glUniformMatrix4fv(gl->glGetUniformLocation(shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(biasedProjection));
 
     glm::vec3 lightPos(2.0f, 3.0f, 2.0f);
     glm::vec3 lightColor(1.0f, 1.0f, 1.0f);
     glm::vec3 clothColor(0.2f, 0.5f, 0.8f);
     
-    glUniform3fv(glGetUniformLocation(shaderProgram, "lightPos"), 1, glm::value_ptr(lightPos));
-    glUniform3fv(glGetUniformLocation(shaderProgram, "lightColor"), 1, glm::value_ptr(lightColor));
-    glUniform3fv(glGetUniformLocation(shaderProgram, "clothColor"), 1, glm::value_ptr(clothColor));
+    gl->glUniform3fv(gl->glGetUniformLocation(shaderProgram, "lightPos"), 1, glm::value_ptr(lightPos));
+    gl->glUniform3fv(gl->glGetUniformLocation(shaderProgram, "lightColor"), 1, glm::value_ptr(lightColor));
+    gl->glUniform3fv(gl->glGetUniformLocation(shaderProgram, "clothColor"), 1, glm::value_ptr(clothColor));
 
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
+    gl->glBindVertexArray(vao);
 
-    glUseProgram(0);
+    gl->glEnable(GL_POLYGON_OFFSET_FILL);
+    glDisable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
+    gl->glPolygonOffset(100.0f, 100.0f);
+
+    gl->glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+    gl->glDisable(GL_POLYGON_OFFSET_FILL);
+    gl->glBindVertexArray(0);
+    gl->glUseProgram(0);
 }

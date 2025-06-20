@@ -9,6 +9,7 @@
 class Cloth {
 private:
     static const glm::vec3 gravity;
+    static const glm::vec3 wind;
     std::vector<Particle> particles;
     std::vector<Spring> springs;
 
@@ -18,6 +19,8 @@ public:
     void applygravity(std::vector<Particle>& particles, float deltaTime);
     void applymouseconstraint(glm::vec2 mousePos, bool mousePressed);
     void update(float deltaTime);
+    void applywind(float deltaTime);
+    void reset();
     
     const std::vector<Particle>& getParticles() const;
     const std::vector<Spring>& getSprings() const;
