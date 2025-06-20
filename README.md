@@ -8,4 +8,4 @@
 6) cmake --build . (For tests:  cmake --build . --target tests)
 7) ./bin/cloth_simulation (For tests:  ./tests)
 
-This is a first pass run, and I am not using not realistic gravity just to use the mouse constraint.
+You need to click on th cloth to activate any of the sim. Your mouse is a constraint to move it around.
