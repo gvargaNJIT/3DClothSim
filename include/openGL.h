@@ -63,6 +63,8 @@ private:
     void setupShaders();
     void updateBuffers(const std::vector<Particle>& particles, int width, int height);
     void calculateNormals(std::vector<float>& vertices, const std::vector<Particle>& particles, int width, int height);
+    int currentShadingMode;
+    GLuint wireframeProgram;
     
 public:
     ClothRenderer();
@@ -70,6 +72,10 @@ public:
     
     void initialize(QOpenGLFunctions_3_3_Core* funcs);
     void render(const Cloth& cloth, const std::vector<Particle>& particles, const glm::mat4& projection, const glm::mat4& view);
+    void setShadingMode(int mode);
+    void toggleWireframe(bool enable);
+    void calculateNormalsAndCurvature(std::vector<float>& vertices, const std::vector<Particle>& particles, int width, int height);
+    float calculateCurvature(const std::vector<Particle>& particles, int index, int width, int height);
 };
 
 #endif

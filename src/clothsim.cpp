@@ -1,6 +1,5 @@
 #include "clothsim.h"
 #include <glm/gtx/string_cast.hpp>
-#include <glm/gtx/norm.hpp>
 
 const glm::vec3 Cloth::gravity = glm::vec3(0.0f, -3.0f, 0.0f);
 const glm::vec3 Cloth::wind = glm::vec3(3.0f, 0.0f, 0.0f);
@@ -104,14 +103,65 @@ void Cloth::applygravity(std::vector<Particle>& particles, float deltaTime) {
     }
 }
 
+void Cloth::handleSelfCollision() {
+    float minDistance = spacing * 0.6f;
+    
+    for (size_t i = 0; i < particles.size(); ++i) {
+        if (particles[i].mass == 0.0f) continue;
+        
+        for (size_t j = i + 1; j < particles.size(); ++j) {
+            if (particles[j].mass == 0.0f) continue;
+            
+            if (areNeighbors(i, j)) continue;
+            
+            glm::vec3 diff = particles[i].position - particles[j].position;
+            float distance = glm::length(diff);
+            
+            if (distance < minDistance && distance > 0.001f) {
+                glm::vec3 normal = glm::normalize(diff);
+                float overlap = minDistance - distance;
+                
+                float totalMass = particles[i].mass + particles[j].mass;
+                float ratio1 = particles[j].mass / totalMass;
+                float ratio2 = particles[i].mass / totalMass;
+
+                particles[i].position += normal * (overlap * ratio1);
+                particles[j].position -= normal * (overlap * ratio2);
+                
+                glm::vec3 vel1 = particles[i].position - particles[i].previousPosition;
+                glm::vec3 vel2 = particles[j].position - particles[j].previousPosition;
+                
+                particles[i].previousPosition = particles[i].position - vel1;
+                particles[j].previousPosition = particles[j].position - vel2;
+            }
+        }
+    }
+}
+
+bool Cloth::areNeighbors(int i, int j) const {
+    int row1 = i / width, col1 = i % width;
+    int row2 = j / width, col2 = j % width;
+    
+    int rowDiff = abs(row1 - row2);
+    int colDiff = abs(col1 - col2);
+    
+    return (rowDiff <= 1 && colDiff <= 1) ||
+           (rowDiff <= 2 && colDiff == 0) ||
+           (rowDiff == 0 && colDiff <= 2);
+}
+
 void Cloth::update(float deltaTime) {
     if (gravityEnabled) {
         applygravity(particles, deltaTime);
     }
 
-    const int solverIterations = 10;
+    const int solverIterations = 8;
     for (int i = 0; i < solverIterations; ++i) {
         springforces(particles, springs, stiffness, damping);
+        
+        if (i % 2 == 0) {
+            handleSelfCollision();
+        }
     }
     
     updateparticles(particles, deltaTime);
@@ -128,9 +178,8 @@ void Cloth::applymouseconstraint(glm::vec2 mousePos, bool mousePressed) {
     glm::vec3 mousePoint(normalizedX, normalizedY, 0.0f);
 
     float radius = spacing * 4.0f;
-    float freezeRadius = spacing * 3.5f; // Smaller radius for frozen particles
+    float freezeRadius = spacing * 3.5f;
     
-    // Find the closest particle to be our "anchor"
     int closestParticle = -1;
     float minDistance = radius;
     
@@ -149,25 +198,21 @@ void Cloth::applymouseconstraint(glm::vec2 mousePos, bool mousePressed) {
         Particle& anchor = particles[closestParticle];
         glm::vec3 anchorOriginalPos = anchor.position;
         
-        // Move the anchor particle to mouse position with smoothing
         glm::vec3 targetMovement = mousePoint - anchorOriginalPos;
-        glm::vec3 smoothedMovement = targetMovement * 0.8f; // Smooth the movement
+        glm::vec3 smoothedMovement = targetMovement * 0.8f;
         
         anchor.previousPosition = anchor.position;
         anchor.position = anchorOriginalPos + smoothedMovement;
         
-        // Calculate how much the anchor moved (use smoothed movement)
         glm::vec3 movement = smoothedMovement;
         
-        // Freeze nearby particles by moving them the same amount
         for (size_t i = 0; i < particles.size(); i++) {
-            if (i == closestParticle) continue; // Skip the anchor itself
+            if (i == closestParticle) continue;
             
             Particle& p = particles[i];
             if (p.mass > 0.0f) {
                 float distance = glm::distance(p.position, anchorOriginalPos);
                 if (distance < freezeRadius) {
-                    // Move this particle by the same amount as the anchor
                     p.previousPosition = p.position;
                     p.position += movement;
                 }
@@ -229,8 +274,5 @@ void Cloth::reset() {
                 springs.push_back(Spring(index, index + width * 2, spacing * 2.0f, stiffness * 0.5f));
         }
     }
-
-    particles[0].mass = 0.0f;
-    particles[width - 1].mass = 0.0f;
 }
 

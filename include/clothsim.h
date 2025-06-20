@@ -12,6 +12,9 @@ private:
     static const glm::vec3 wind;
     std::vector<Particle> particles;
     std::vector<Spring> springs;
+    void handleSelfCollision();
+    bool areNeighbors(int i, int j) const;
+    float minCollisionDistance = 0.03f;
 
 public:
     void springforces(std::vector<Particle>& particles, const std::vector<Spring>& springs, float stiffness, float damping);

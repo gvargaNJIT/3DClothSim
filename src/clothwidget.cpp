@@ -55,6 +55,7 @@ void ClothWidget::paintGL() {
     QPainter painter(this);
     painter.setPen(Qt::white);
     painter.drawText(10, 20, "WASD = Move Camera | QE = Zoom | F = Wind | Mouse = Grab | R = Reset");
+    painter.drawText(10, 40, "1-4 = Shading Modes: 1=Basic 2=Enhanced 3=Height 4=Fresnel");
     painter.end();
 
     renderer.render(cloth, cloth.getParticles(), projection, view);
@@ -107,6 +108,22 @@ void ClothWidget::keyPressEvent(QKeyEvent *event) {
             gravityEnabled = false;
             windEnabled = false;
             windPending = false;
+            cameraPos = glm::vec3(1.0f, 1.0f, 3.0f);
+            cameraTarget = glm::vec3(1.0f, 1.0f, 0.0f);
+            cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+            break;
+        case Qt::Key_1:
+            renderer.setShadingMode(0);
+            break;
+        case Qt::Key_2:
+            renderer.setShadingMode(1);
+            break;
+        case Qt::Key_3:
+            renderer.setShadingMode(2);
+            break;
+        case Qt::Key_4:
+            renderer.setShadingMode(3);
+            break;
         default:
             QWidget::keyPressEvent(event);
     }
